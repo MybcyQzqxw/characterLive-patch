@@ -22,38 +22,29 @@ characterLive 补丁，当前可实现无用歌曲删除。
 
 ## 使用方法
 
-### 方法一：直接运行Python脚本
+1. 创建并激活Python虚拟环境（可选但推荐）：
 
-1. 确保已安装Python 3.7+
-2. 运行以下命令：
+   ```bash
+   conda create -n characterLive-patch python=3.12 -y
+   conda activate characterLive-patch
+   pip install pyinstaller Pillow
+   ```
+
+2. 开发环境下运行以下命令：
 
    ```bash
    python characterLive-patch.py
    ```
 
-### 方法二：打包为EXE可执行文件
-
-1. 安装PyInstaller：
+3. 打包为单个exe文件：
 
    ```bash
-   pip install pyinstaller
+   .\build.ps1
    ```
 
-2. 打包为单个exe文件：
+4. 打包完成后，exe文件位于 `dist` 文件夹中
 
-   ```bash
-   pyinstaller build.spec
-   ```
-
-   或者使用命令行方式：
-
-   ```bash
-   pyinstaller --onefile --windowed --name="characterLive-patch" characterLive-patch.py
-   ```
-
-3. 打包完成后，exe文件位于 `dist` 文件夹中
-
-4. 双击 `characterLive-patch.exe` 即可运行
+5. 双击 `characterLive-patch.exe` 即可运行
 
 ## 界面说明
 

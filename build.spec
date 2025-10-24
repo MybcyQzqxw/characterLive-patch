@@ -3,7 +3,7 @@
 block_cipher = None
 
 a = Analysis(
-    ['file_cleaner_app.py'],
+    ['characterLive-patch.py'],
     pathex=[],
     binaries=[],
     datas=[],
@@ -27,18 +27,19 @@ exe = EXE(
     a.zipfiles,
     a.datas,
     [],
-    name='文件清理工具',
+    name='characterLive-patch',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=False,  # 不显示控制台窗口
+    console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon='favicon.ico',  # 使用favicon.ico作为程序图标
+    icon='favicon.ico',
 )
+

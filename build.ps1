@@ -15,22 +15,22 @@ try {
     $condaInfo = conda info --envs 2>&1
     
     if ($condaInfo -match $condaEnvName) {
-        Write-Host "✓ Found conda environment: $condaEnvName" -ForegroundColor Green
+        Write-Host "[OK] Found conda environment: $condaEnvName" -ForegroundColor Green
         Write-Host "Activating environment..." -ForegroundColor Yellow
         
         # Activate conda environment
         conda activate $condaEnvName
         
         if ($LASTEXITCODE -eq 0) {
-            Write-Host "✓ Environment activated successfully" -ForegroundColor Green
+            Write-Host "[OK] Environment activated successfully" -ForegroundColor Green
         } else {
-            Write-Host "✗ Failed to activate environment" -ForegroundColor Red
+            Write-Host "[ERROR] Failed to activate environment" -ForegroundColor Red
             Write-Host "Please run: conda activate $condaEnvName" -ForegroundColor Yellow
             Read-Host "Press Enter to exit"
             exit 1
         }
     } else {
-        Write-Host "✗ Conda environment '$condaEnvName' not found!" -ForegroundColor Red
+        Write-Host "[ERROR] Conda environment '$condaEnvName' not found!" -ForegroundColor Red
         Write-Host ""
         Write-Host "Please create the environment first:" -ForegroundColor Yellow
         Write-Host "  conda create -n $condaEnvName python=3.9" -ForegroundColor Cyan
@@ -41,7 +41,7 @@ try {
         exit 1
     }
 } catch {
-    Write-Host "✗ Conda not found or error occurred" -ForegroundColor Red
+    Write-Host "[ERROR] Conda not found or error occurred" -ForegroundColor Red
     Write-Host "Error: $_" -ForegroundColor Red
     Write-Host ""
     Write-Host "Please make sure conda is installed and in your PATH" -ForegroundColor Yellow
@@ -55,11 +55,27 @@ Write-Host ""
 Write-Host "Checking PyInstaller..." -ForegroundColor Yellow
 try {
     $null = pyinstaller --version
-    Write-Host "✓ PyInstaller installed" -ForegroundColor Green
+    Write-Host "[OK] PyInstaller installed" -ForegroundColor Green
 }
 catch {
-    Write-Host "✗ PyInstaller not found, installing..." -ForegroundColor Red
+    Write-Host "[ERROR] PyInstaller not found, installing..." -ForegroundColor Red
     pip install pyinstaller
+}
+
+# Check if Pillow is installed (required for icon processing)
+Write-Host "Checking Pillow..." -ForegroundColor Yellow
+try {
+    $pillowCheck = python -c "import PIL; print(PIL.__version__)" 2>&1
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "[OK] Pillow installed (version: $pillowCheck)" -ForegroundColor Green
+    } else {
+        throw "Pillow not found"
+    }
+}
+catch {
+    Write-Host "[ERROR] Pillow not found, installing..." -ForegroundColor Red
+    pip install Pillow
+    Write-Host "[OK] Pillow installed successfully" -ForegroundColor Green
 }
 
 Write-Host ""
@@ -83,7 +99,7 @@ pyinstaller build.spec
 Write-Host ""
 if (Test-Path "dist\characterLive-patch.exe") {
     Write-Host "=================================" -ForegroundColor Green
-    Write-Host "  ✓ Build successful!" -ForegroundColor Green
+    Write-Host "  [SUCCESS] Build completed!" -ForegroundColor Green
     Write-Host "=================================" -ForegroundColor Green
     Write-Host ""
     Write-Host "Executable location: dist\characterLive-patch.exe" -ForegroundColor Cyan
@@ -97,7 +113,7 @@ if (Test-Path "dist\characterLive-patch.exe") {
 }
 else {
     Write-Host "=================================" -ForegroundColor Red
-    Write-Host "  ✗ Build failed!" -ForegroundColor Red
+    Write-Host "  [FAILED] Build failed!" -ForegroundColor Red
     Write-Host "=================================" -ForegroundColor Red
     Write-Host "Please check the error messages above" -ForegroundColor Yellow
 }
