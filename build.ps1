@@ -11,7 +11,8 @@ Write-Host "检查 PyInstaller..." -ForegroundColor Yellow
 try {
     $null = pyinstaller --version
     Write-Host "✓ PyInstaller 已安装" -ForegroundColor Green
-} catch {
+}
+catch {
     Write-Host "✗ PyInstaller 未安装，正在安装..." -ForegroundColor Red
     pip install pyinstaller
 }
@@ -35,12 +36,12 @@ Write-Host "执行打包命令..." -ForegroundColor Yellow
 pyinstaller build.spec
 
 Write-Host ""
-if (Test-Path "dist\文件清理工具.exe") {
+if (Test-Path "dist\characterLive-patch.exe") {
     Write-Host "=================================" -ForegroundColor Green
     Write-Host "  ✓ 打包成功！" -ForegroundColor Green
     Write-Host "=================================" -ForegroundColor Green
     Write-Host ""
-    Write-Host "可执行文件位置: dist\文件清理工具.exe" -ForegroundColor Cyan
+    Write-Host "可执行文件位置: dist\characterLive-patch.exe" -ForegroundColor Cyan
     Write-Host ""
     
     # 询问是否打开文件夹
@@ -48,7 +49,8 @@ if (Test-Path "dist\文件清理工具.exe") {
     if ($response -eq "Y" -or $response -eq "y") {
         explorer.exe "dist"
     }
-} else {
+}
+else {
     Write-Host "=================================" -ForegroundColor Red
     Write-Host "  ✗ 打包失败！" -ForegroundColor Red
     Write-Host "=================================" -ForegroundColor Red

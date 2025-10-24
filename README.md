@@ -28,7 +28,7 @@ characterLive 补丁，当前可实现无用歌曲删除。
 2. 运行以下命令：
 
    ```bash
-   python file_cleaner_app.py
+   python characterLive-patch.py
    ```
 
 ### 方法二：打包为EXE可执行文件
@@ -48,7 +48,7 @@ characterLive 补丁，当前可实现无用歌曲删除。
    或者使用命令行方式：
 
    ```bash
-   pyinstaller --onefile --windowed --name="characterLive-patch" file_cleaner_app.py
+   pyinstaller --onefile --windowed --name="characterLive-patch" characterLive-patch.py
    ```
 
 3. 打包完成后，exe文件位于 `dist` 文件夹中
