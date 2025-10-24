@@ -30,13 +30,13 @@ characterLive 补丁，当前可实现无用歌曲删除。
    pip install pyinstaller Pillow
    ```
 
-2. 开发环境下运行以下命令：
+2. 【开发环境】运行以下命令：
 
    ```bash
    python characterLive-patch.py
    ```
 
-3. 打包为单个exe文件：
+3. 【应用需求】打包为单个exe文件：
 
    ```bash
    .\build.ps1
