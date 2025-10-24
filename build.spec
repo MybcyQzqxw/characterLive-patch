@@ -40,5 +40,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=None,  # 如果有图标，可以在这里指定路径
+    icon='favicon.ico',  # 使用favicon.ico作为程序图标
 )
