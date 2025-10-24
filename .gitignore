@@ -13,6 +13,7 @@ env.bak/
 venv.bak/
 
 # PyInstaller 打包相关
+icon/
 build/
 dist/
 *.spec.bak
