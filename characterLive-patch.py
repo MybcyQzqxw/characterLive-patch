@@ -244,7 +244,7 @@ class CharacterLivePatch:
         # Confirm operation
         response = messagebox.askyesno(
             "Confirm", 
-            f"Transfer MP3 files from:\n{mp3_storage_path}\n\nto characterLive/songs/download?\n\nThis will copy unique files only."
+            f"Transfer MP3 and LRC files from:\n{mp3_storage_path}\n\nto characterLive/songs/download?\n\nThis will copy unique files only."
         )
         
         if not response:
@@ -260,10 +260,10 @@ class CharacterLivePatch:
         thread.start()
     
     def transfer_mp3_files(self, characterlive_path, mp3_storage_path):
-        """Transfer MP3 files with extension normalization"""
+        """Transfer MP3 and LRC files with extension normalization"""
         try:
             self.log_message("\n" + "=" * 80)
-            self.log_message(f"Transferring MP3 files from: {mp3_storage_path}")
+            self.log_message(f"Transferring MP3 and LRC files from: {mp3_storage_path}")
             self.log_message("=" * 80)
             
             # Prepare destination directory
@@ -281,9 +281,12 @@ class CharacterLivePatch:
             for file in os.listdir(mp3_storage_path):
                 file_path = os.path.join(mp3_storage_path, file)
                 if os.path.isfile(file_path):
-                    source_files.append(file)
+                    # Only process mp3 and lrc files
+                    ext = os.path.splitext(file)[1].lower()
+                    if ext in ['.mp3', '.lrc']:
+                        source_files.append(file)
             
-            self.log_message(f"Found {len(source_files)} file(s) in source directory")
+            self.log_message(f"Found {len(source_files)} MP3/LRC file(s) in source directory")
             
             # Get existing files in destination (with normalized extensions)
             existing_files = {}
@@ -293,8 +296,9 @@ class CharacterLivePatch:
                     if os.path.isfile(file_path):
                         # Normalize extension to lowercase
                         name, ext = os.path.splitext(file)
-                        normalized_name = name.lower()
-                        existing_files[normalized_name] = file
+                        # Store with both name and extension for accurate matching
+                        key = (name.lower(), ext.lower())
+                        existing_files[key] = file
             
             self.log_message(f"Found {len(existing_files)} existing file(s) in destination")
             self.log_message("")
@@ -312,9 +316,10 @@ class CharacterLivePatch:
                 normalized_name = name.lower()
                 normalized_ext = ext.lower()
                 
-                # Check if file already exists (case-insensitive name comparison)
-                if normalized_name in existing_files:
-                    self.log_message(f"[SKIP] {source_file} (already exists as {existing_files[normalized_name]})")
+                # Check if file already exists (case-insensitive name and extension comparison)
+                check_key = (normalized_name, normalized_ext)
+                if check_key in existing_files:
+                    self.log_message(f"[SKIP] {source_file} (already exists as {existing_files[check_key]})")
                     total_skipped += 1
                     continue
                 
