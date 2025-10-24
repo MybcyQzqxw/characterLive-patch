@@ -98,17 +98,30 @@ class CharacterLivePatch:
         self.sovits_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 5))
         tk.Button(row3_frame, text="Browse", command=lambda: self.browse_folder(self.sovits_entry)).pack(side=tk.LEFT)
         
-        # Row 4: Song name input
+        # Row 4: Song name input with two operation buttons
         row4_frame = tk.Frame(self.root)
         row4_frame.pack(fill=tk.X, **padding)
         
         tk.Label(row4_frame, text="Song name:", width=18, anchor='w').pack(side=tk.LEFT)
         self.songname_entry = tk.Entry(row4_frame)
         self.songname_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 5))
-        self.execute_button = tk.Button(row4_frame, text="Execute", command=self.on_execute_click, bg='#ff6b6b', fg='white', font=('Arial', 10, 'bold'))
+        self.exact_delete_button = tk.Button(row4_frame, text="Exact Delete", command=lambda: self.on_execute_click(exact=True), bg='#e74c3c', fg='white', font=('Arial', 10, 'bold'))
+        self.exact_delete_button.pack(side=tk.LEFT, padx=(0, 5))
+        self.execute_button = tk.Button(row4_frame, text="Delete", command=lambda: self.on_execute_click(exact=False), bg='#ff6b6b', fg='white', font=('Arial', 10, 'bold'))
         self.execute_button.pack(side=tk.LEFT, padx=(0, 5))
         
-        # Row 5: Output terminal
+        # Row 5: MP3 transfer function
+        row5_frame = tk.Frame(self.root)
+        row5_frame.pack(fill=tk.X, **padding)
+        
+        tk.Label(row5_frame, text="MP3 storage:", width=18, anchor='w').pack(side=tk.LEFT)
+        self.mp3_storage_entry = tk.Entry(row5_frame)
+        self.mp3_storage_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 5))
+        tk.Button(row5_frame, text="Browse", command=lambda: self.browse_folder(self.mp3_storage_entry)).pack(side=tk.LEFT, padx=(0, 5))
+        self.transfer_button = tk.Button(row5_frame, text="Transfer", command=self.on_transfer_click, bg='#3498db', fg='white', font=('Arial', 10, 'bold'))
+        self.transfer_button.pack(side=tk.LEFT, padx=(0, 5))
+        
+        # Row 6: Output terminal
         output_frame = tk.Frame(self.root)
         output_frame.pack(fill=tk.BOTH, expand=True, **padding)
         
@@ -149,6 +162,11 @@ class CharacterLivePatch:
         
         path = self.config.get('sovits_path', self.default_paths['sovits_path'])
         self.sovits_entry.insert(0, path)
+        
+        # Load MP3 storage path with default
+        default_mp3_path = r'E:\mine\songs-for-mm'
+        path = self.config.get('mp3_storage_path', default_mp3_path)
+        self.mp3_storage_entry.insert(0, path)
     
     def log_message(self, message):
         """Display message in output area"""
@@ -158,7 +176,7 @@ class CharacterLivePatch:
         self.output_text.config(state='disabled')
         self.root.update_idletasks()
     
-    def on_execute_click(self):
+    def on_execute_click(self, exact=False):
         """Execute button click handler"""
         characterlive_path = self.characterlive_entry.get().strip()
         singsong_path = self.singsong_entry.get().strip()
@@ -180,24 +198,156 @@ class CharacterLivePatch:
         self.save_config()
         
         # Confirm operation
+        match_type = "exactly match" if exact else "contain"
         response = messagebox.askyesno(
             "Confirm", 
-            f"Process all files containing '{song_name}'?\n\nThis action cannot be undone!"
+            f"Process all files that {match_type} '{song_name}'?\n\nThis action cannot be undone!"
         )
         
         if not response:
             self.log_message("Operation cancelled by user")
             return
         
-        # Disable button to prevent duplicate clicks
+        # Disable buttons to prevent duplicate clicks
         self.execute_button.config(state='disabled')
+        self.exact_delete_button.config(state='disabled')
         
         # Execute operation in new thread
-        thread = threading.Thread(target=self.process_files, args=(characterlive_path, singsong_path, sovits_path, song_name))
+        thread = threading.Thread(target=self.process_files, args=(characterlive_path, singsong_path, sovits_path, song_name, exact))
         thread.daemon = True
         thread.start()
     
-    def process_files(self, characterlive_path, singsong_path, sovits_path, song_name):
+    def on_transfer_click(self):
+        """Handle MP3 transfer button click"""
+        # Get paths
+        characterlive_path = self.characterlive_entry.get().strip()
+        mp3_storage_path = self.mp3_storage_entry.get().strip()
+        
+        if not characterlive_path or not mp3_storage_path:
+            messagebox.showwarning("Warning", "Please enter all required paths")
+            return
+        
+        # Validate paths
+        if not os.path.exists(characterlive_path):
+            messagebox.showerror("Error", f"characterLive path does not exist:\n{characterlive_path}")
+            return
+        
+        if not os.path.exists(mp3_storage_path):
+            messagebox.showerror("Error", f"MP3 storage path does not exist:\n{mp3_storage_path}")
+            return
+        
+        # Save configuration
+        self.config['characterlive_path'] = characterlive_path
+        self.config['mp3_storage_path'] = mp3_storage_path
+        self.save_config()
+        
+        # Confirm operation
+        response = messagebox.askyesno(
+            "Confirm", 
+            f"Transfer MP3 files from:\n{mp3_storage_path}\n\nto characterLive/songs/download?\n\nThis will copy unique files only."
+        )
+        
+        if not response:
+            self.log_message("Transfer cancelled by user")
+            return
+        
+        # Disable button to prevent duplicate clicks
+        self.transfer_button.config(state='disabled')
+        
+        # Execute operation in new thread
+        thread = threading.Thread(target=self.transfer_mp3_files, args=(characterlive_path, mp3_storage_path))
+        thread.daemon = True
+        thread.start()
+    
+    def transfer_mp3_files(self, characterlive_path, mp3_storage_path):
+        """Transfer MP3 files with extension normalization"""
+        try:
+            self.log_message("\n" + "=" * 80)
+            self.log_message(f"Transferring MP3 files from: {mp3_storage_path}")
+            self.log_message("=" * 80)
+            
+            # Prepare destination directory
+            dest_dir = os.path.join(characterlive_path, "songs", "download")
+            if not os.path.exists(dest_dir):
+                os.makedirs(dest_dir)
+                self.log_message(f"Created destination directory: {dest_dir}")
+            
+            # Get all files from source
+            if not os.path.exists(mp3_storage_path):
+                self.log_message(f"[ERROR] Source path does not exist: {mp3_storage_path}")
+                return
+            
+            source_files = []
+            for file in os.listdir(mp3_storage_path):
+                file_path = os.path.join(mp3_storage_path, file)
+                if os.path.isfile(file_path):
+                    source_files.append(file)
+            
+            self.log_message(f"Found {len(source_files)} file(s) in source directory")
+            
+            # Get existing files in destination (with normalized extensions)
+            existing_files = {}
+            if os.path.exists(dest_dir):
+                for file in os.listdir(dest_dir):
+                    file_path = os.path.join(dest_dir, file)
+                    if os.path.isfile(file_path):
+                        # Normalize extension to lowercase
+                        name, ext = os.path.splitext(file)
+                        normalized_name = name.lower()
+                        existing_files[normalized_name] = file
+            
+            self.log_message(f"Found {len(existing_files)} existing file(s) in destination")
+            self.log_message("")
+            
+            # Process each source file
+            total_copied = 0
+            total_skipped = 0
+            total_failed = 0
+            
+            for source_file in source_files:
+                source_path = os.path.join(mp3_storage_path, source_file)
+                
+                # Extract filename without extension and normalize
+                name, ext = os.path.splitext(source_file)
+                normalized_name = name.lower()
+                normalized_ext = ext.lower()
+                
+                # Check if file already exists (case-insensitive name comparison)
+                if normalized_name in existing_files:
+                    self.log_message(f"[SKIP] {source_file} (already exists as {existing_files[normalized_name]})")
+                    total_skipped += 1
+                    continue
+                
+                # Prepare destination filename with normalized extension
+                dest_filename = name + normalized_ext
+                dest_path = os.path.join(dest_dir, dest_filename)
+                
+                # Copy file
+                try:
+                    import shutil
+                    shutil.copy2(source_path, dest_path)
+                    self.log_message(f"[OK] Copied: {source_file} -> {dest_filename}")
+                    total_copied += 1
+                except Exception as e:
+                    self.log_message(f"[ERROR] Failed to copy {source_file}: {e}")
+                    total_failed += 1
+            
+            # Summary
+            self.log_message("\n" + "=" * 80)
+            self.log_message("Transfer completed!")
+            self.log_message(f"Files copied: {total_copied}")
+            self.log_message(f"Files skipped (already exist): {total_skipped}")
+            if total_failed > 0:
+                self.log_message(f"Failed: {total_failed}")
+            self.log_message("=" * 80)
+            
+        except Exception as e:
+            self.log_message(f"\n[ERROR] Error: {e}")
+            messagebox.showerror("Error", f"Transfer failed: {e}")
+        finally:
+            self.root.after(0, lambda: self.transfer_button.config(state='normal'))
+    
+    def process_files(self, characterlive_path, singsong_path, sovits_path, song_name, exact=False):
         """Process files matching song name"""
         try:
             self.log_message("\n" + "=" * 80)
@@ -239,9 +389,18 @@ class CharacterLivePatch:
                 
                 for root, dirs, files in os.walk(dir_path):
                     for file in files:
-                        if song_name in file:
-                            file_path = os.path.join(root, file)
-                            found_files.append(file_path)
+                        # Check match based on exact flag
+                        file_name_without_ext = os.path.splitext(file)[0]
+                        if exact:
+                            # Exact match: filename (without extension) must equal song_name
+                            if file_name_without_ext == song_name:
+                                file_path = os.path.join(root, file)
+                                found_files.append(file_path)
+                        else:
+                            # Partial match: filename must contain song_name
+                            if song_name in file:
+                                file_path = os.path.join(root, file)
+                                found_files.append(file_path)
                 
                 if found_files:
                     self.log_message(f"   Found {len(found_files)} file(s):")
@@ -254,10 +413,10 @@ class CharacterLivePatch:
                         try:
                             os.remove(file_path)
                             total_processed += 1
-                            self.log_message(f"     ✓ Processed")
+                            self.log_message(f"     [OK] Processed")
                         except Exception as e:
                             total_failed += 1
-                            self.log_message(f"     ✗ Failed: {e}")
+                            self.log_message(f"     [ERROR] Failed: {e}")
                 else:
                     self.log_message(f"   No files containing '{song_name}' found")
             
@@ -270,10 +429,11 @@ class CharacterLivePatch:
             self.log_message("=" * 80)
             
         except Exception as e:
-            self.log_message(f"\n❌ Error: {e}")
+            self.log_message(f"\n[ERROR] Error: {e}")
             messagebox.showerror("Error", f"Operation failed: {e}")
         finally:
             self.root.after(0, lambda: self.execute_button.config(state='normal'))
+            self.root.after(0, lambda: self.exact_delete_button.config(state='normal'))
 
 
 def main():
