@@ -1,0 +1,54 @@
+# Python 缓存文件
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# 虚拟环境
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# PyInstaller 打包相关
+build/
+dist/
+*.spec.bak
+*.manifest
+*.exe.manifest
+
+# 配置文件 (包含用户路径信息)
+config.json
+
+# IDE 相关
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 日志文件
+*.log
+
+# 操作系统生成的文件
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 临时文件
+*.tmp
+*.temp
+*.bak
+
+# PyInstaller 工作目录
+*.egg-info/
+.eggs/
+
+# 测试覆盖率
+.coverage
+htmlcov/
+
+# 打包时的临时文件
+*.whl
