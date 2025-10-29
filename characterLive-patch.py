@@ -288,6 +288,36 @@ class CharacterLivePatch:
             
             self.log_message(f"Found {len(source_files)} MP3/LRC file(s) in source directory")
             
+            # Pre-process: Rename files containing " - " pattern
+            self.log_message("\nChecking for files to rename...")
+            renamed_count = 0
+            for i, file in enumerate(source_files):
+                old_path = os.path.join(mp3_storage_path, file)
+                name, ext = os.path.splitext(file)
+                
+                # Check if filename contains " - " (space-dash-space)
+                if " - " in name:
+                    # Find the last occurrence of " - " and keep only the part after it
+                    last_index = name.rfind(" - ")
+                    new_name = name[last_index + 3:]  # +3 to skip " - "
+                    new_filename = new_name + ext
+                    new_path = os.path.join(mp3_storage_path, new_filename)
+                    
+                    try:
+                        # Rename the file
+                        os.rename(old_path, new_path)
+                        self.log_message(f"[RENAME] {file} -> {new_filename}")
+                        source_files[i] = new_filename  # Update the list with new filename
+                        renamed_count += 1
+                    except Exception as e:
+                        self.log_message(f"[ERROR] Failed to rename {file}: {e}")
+            
+            if renamed_count > 0:
+                self.log_message(f"Renamed {renamed_count} file(s)")
+            else:
+                self.log_message("No files need renaming")
+            self.log_message("")
+            
             # Get existing files in destination (with normalized extensions)
             existing_files = {}
             if os.path.exists(dest_dir):
